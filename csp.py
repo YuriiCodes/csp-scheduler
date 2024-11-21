@@ -3,7 +3,7 @@ class CSP:
         self.variables = variables  # Список змінних
         self.domains = domains  # Області визначення для кожної змінної
         self.constraints = constraints  # Список обмежень
-        self.assignments = []  # Поточний стан присвоєння значень (як список подій)
+        self.assignments = []  # Поточний стан присвоєння (список подій)
 
     def is_consistent(self, new_assignment):
         """
@@ -22,35 +22,34 @@ class CSP:
                     return False
         return True
 
-    def select_unassigned_variable(self):
-        """
-        Евристика для вибору наступної змінної (MRV).
-        """
-        unassigned_vars = [v for v in self.variables if v not in {k for a in self.assignments for k in a}]
-        return min(unassigned_vars, key=lambda var: len(self.domains[var]))
-
     def backtracking_search(self):
         """
-        Пошук з поверненням.
+        Пошук з поверненням для генерації повного розкладу.
         """
-        # Якщо всі змінні мають значення, повертаємо присвоєння
-        if len(self.assignments) == len(self.variables):
+        # Якщо всі можливі події створені, повертаємо результат
+        if len(self.assignments) == len(self.domains["time"]) * len(self.domains["group"]):
             return self.assignments
 
-        # Вибираємо змінну для присвоєння
-        var = self.select_unassigned_variable()
-        # Перебираємо можливі значення змінної
-        for value in self.domains[var]:
-            new_assignment = {var: value}
-            if self.is_consistent(new_assignment):
-                # Якщо присвоєння не викликає конфлікту, додаємо його
-                self.assignments.append(new_assignment)
-                # Рекурсивно викликаємо пошук
-                result = self.backtracking_search()
-                if result:
-                    return result
-                # Якщо результату немає, видаляємо присвоєння
-                self.assignments.pop()
+        # Генеруємо всі можливі комбінації подій
+        for lecturer in self.domains["lecturer"]:
+            for classroom in self.domains["classroom"]:
+                for group in self.domains["group"]:
+                    for time in self.domains["time"]:
+                        new_assignment = {
+                            "lecturer": lecturer,
+                            "classroom": classroom,
+                            "group": group,
+                            "time": time,
+                        }
+                        if self.is_consistent(new_assignment):
+                            # Якщо присвоєння не викликає конфлікт, додаємо його
+                            self.assignments.append(new_assignment)
+                            # Рекурсивно викликаємо пошук
+                            result = self.backtracking_search()
+                            if result:
+                                return result
+                            # Якщо результату немає, видаляємо присвоєння
+                            self.assignments.pop()
 
         # Якщо жодне значення не підходить, повертаємо None
         return None
