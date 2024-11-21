@@ -24,32 +24,22 @@ class CSP:
 
     def backtracking_search(self):
         """
-        Пошук з поверненням для генерації повного розкладу.
+        Генерує повний розклад.
         """
-        # Якщо всі можливі події створені, повертаємо результат
-        if len(self.assignments) == len(self.domains["time"]) * len(self.domains["group"]):
-            return self.assignments
-
-        # Генеруємо всі можливі комбінації подій
-        for lecturer in self.domains["lecturer"]:
-            for classroom in self.domains["classroom"]:
-                for group in self.domains["group"]:
-                    for time in self.domains["time"]:
+        # Генеруємо всі можливі комбінації змінних
+        for group in self.domains["group"]:
+            for time in self.domains["time"]:
+                for lecturer in self.domains["lecturer"]:
+                    for classroom in self.domains["classroom"]:
                         new_assignment = {
-                            "lecturer": lecturer,
-                            "classroom": classroom,
                             "group": group,
                             "time": time,
+                            "lecturer": lecturer,
+                            "classroom": classroom,
                         }
                         if self.is_consistent(new_assignment):
-                            # Якщо присвоєння не викликає конфлікт, додаємо його
+                            # Якщо присвоєння не викликає конфлікту, додаємо його
                             self.assignments.append(new_assignment)
-                            # Рекурсивно викликаємо пошук
-                            result = self.backtracking_search()
-                            if result:
-                                return result
-                            # Якщо результату немає, видаляємо присвоєння
-                            self.assignments.pop()
 
-        # Якщо жодне значення не підходить, повертаємо None
-        return None
+        # Повертаємо всі згенеровані події
+        return self.assignments
