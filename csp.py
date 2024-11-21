@@ -3,19 +3,19 @@ class CSP:
         self.variables = variables  # Список змінних
         self.domains = domains  # Області визначення для кожної змінної
         self.constraints = constraints  # Список обмежень
-        self.assignments = []  # Поточний стан присвоєння (список подій)
+        self.assignments = []  # Поточний розклад (список подій)
 
     def is_consistent(self, new_assignment):
         """
-        Перевіряє, чи не порушує нове присвоєння значення змінним обмежень.
+        Перевіряє, чи нова подія відповідає всім обмеженням.
         """
         for constraint in self.constraints:
             vars_in_constraint = constraint["vars"]
-            # Збираємо всі присвоєння, що стосуються змінних у цьому обмеженні
+            # Збираємо всі події, які стосуються змінних у цьому обмеженні
             relevant_assignments = [
                 a for a in self.assignments + [new_assignment] if all(var in a for var in vars_in_constraint)
             ]
-            # Якщо є достатньо присвоєнь, перевіряємо обмеження
+            # Якщо є достатньо подій, перевіряємо обмеження
             for assignment in relevant_assignments:
                 values = [assignment[var] for var in vars_in_constraint]
                 if not constraint["predicate"](self.assignments + [new_assignment], *values):
@@ -24,9 +24,8 @@ class CSP:
 
     def backtracking_search(self):
         """
-        Генерує повний розклад.
+        Генерує повний розклад, додаючи події для всіх груп і часів.
         """
-        # Генеруємо всі можливі комбінації змінних
         for group in self.domains["group"]:
             for time in self.domains["time"]:
                 for lecturer in self.domains["lecturer"]:
@@ -38,8 +37,7 @@ class CSP:
                             "classroom": classroom,
                         }
                         if self.is_consistent(new_assignment):
-                            # Якщо присвоєння не викликає конфлікту, додаємо його
+                            # Додаємо подію до розкладу
                             self.assignments.append(new_assignment)
 
-        # Повертаємо всі згенеровані події
         return self.assignments
