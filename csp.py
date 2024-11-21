@@ -35,7 +35,7 @@ class CSP:
 
     def is_consistent(self, new_assignment):
         """
-        Перевіряє, чи не порушує нова подія всіх обмежень.
+        Перевіряє, чи нова подія відповідає всім обмеженням.
         """
         for constraint in self.constraints:
             vars_in_constraint = constraint["vars"]
@@ -50,25 +50,54 @@ class CSP:
 
     def backtracking_search(self):
         """
-        Генерує повний розклад за допомогою пошуку з евристиками.
+        Генерує повний розклад.
         """
         # Якщо всі змінні заповнені, повертаємо розклад
         if len(self.assignments) == len(self.domains["time"]) * len(self.domains["group"]):
             return self.assignments
 
-        # Вибираємо змінну за допомогою degree heuristic
-        var = select_unassigned_variable(self.assignments, self.variables, self.constraints, self.domains)
+        # Вибираємо змінну для присвоєння
+        for group in self.domains["group"]:
+            for time in self.domains["time"]:
+                for lecturer in self.domains["lecturer"]:
+                    for classroom in self.domains["classroom"]:
+                        new_assignment = {
+                            "group": group,
+                            "time": time,
+                            "lecturer": lecturer,
+                            "classroom": classroom,
+                        }
+                        if self.is_consistent(new_assignment):
+                            # Додаємо подію до розкладу
+                            self.assignments.append(new_assignment)
 
-        # Вибираємо значення за принципом least constraining value
-        for value in order_domain_values(var, self.domains, self.assignments, self.constraints):
-            new_assignment = {var: value}
-            if self.is_consistent(new_assignment):
-                # Додаємо подію до розкладу
-                self.assignments.append(new_assignment)
-                result = self.backtracking_search()
-                if result:
-                    return result
-                # Якщо конфлікт, видаляємо подію
-                self.assignments.pop()
+        return self.assignments
 
-        return None
+    def fitness(self):
+        """
+        Оцінює якість розкладу:
+        - Штраф за конфлікти.
+        - Бонус за рівномірний розподіл.
+        """
+        penalty = 0
+        bonus = 0
+
+        # Перевірка кожного обмеження
+        for constraint in self.constraints:
+            vars_in_constraint = constraint["vars"]
+            for assignment in self.assignments:
+                if all(var in assignment for var in vars_in_constraint):
+                    values = [assignment[var] for var in vars_in_constraint]
+                    if not constraint["predicate"](self.assignments, *values):
+                        penalty += 1  # Штраф за конфлікт
+
+        # Бонус за рівномірний розподіл часу між групами
+        group_slots = {group: [] for group in self.domains["group"]}
+        for event in self.assignments:
+            group_slots[event["group"]].append(event["time"])
+
+        # Рівномірність: чим більше унікальних слотів, тим краще
+        for slots in group_slots.values():
+            bonus += len(set(slots))
+
+        return bonus - penalty
